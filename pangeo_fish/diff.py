@@ -67,9 +67,7 @@ def diff_z(model, tag, depth_threshold=0.8):
     return diff.assign_attrs({"units": original_units}).to_dataset(name="diff")
 
 
-
-    
-############### Second Function with sigma 
+############### Second Function with sigma
 
 import numba
 import numpy as np
@@ -100,8 +98,8 @@ def interp1d_numba(x, y, xi):
             yi[i] = y[-1]
         else:
             j = np.searchsorted(x, v) - 1
-            x0, x1 = x[j], x[j+1]
-            y0, y1 = y[j], y[j+1]
+            x0, x1 = x[j], x[j + 1]
+            y0, y1 = y[j], y[j + 1]
             yi[i] = y0 + (y1 - y0) * (v - x0) / (x1 - x0)
     return yi
 
@@ -117,10 +115,9 @@ def interp_var_numba(var_depth, var_values, tag_depth):
     "(z),(z),(),(o),(o),(p),(p)->()",
     nopython=True,
 )
-def _diff_z_var(model_temp, model_depth, bottom,
-                tag_temp, tag_depth,
-                var_depth, var_values,
-                result):
+def _diff_z_var(
+    model_temp, model_depth, bottom, tag_temp, tag_depth, var_depth, var_values, result
+):
     """
     Computes the mean of ((tag_temp - model_temp_interp)**2) / var_at_depth,
     using manual linear interpolation.
@@ -138,13 +135,13 @@ def diff_z_var(model, tag, var_depth, var_values):
     """
     diff = xr.apply_ufunc(
         _diff_z_var,
-        model["TEMP"],                # Model temperature
-        model["dynamic_depth"],       # Model depth
+        model["TEMP"],  # Model temperature
+        model["dynamic_depth"],  # Model depth
         model["dynamic_bathymetry"],  # Bottom depth
-        tag["temperature"],           # Tag-measured temperature
-        tag["pressure"],              # Tag-measured depth (pressure)
-        var_depth,                    # Depth bins of the variance
-        var_values,                   # Variance values
+        tag["temperature"],  # Tag-measured temperature
+        tag["pressure"],  # Tag-measured depth (pressure)
+        var_depth,  # Depth bins of the variance
+        var_values,  # Variance values
         input_core_dims=[
             ["depth"],
             ["depth"],
@@ -161,10 +158,3 @@ def diff_z_var(model, tag, var_depth, var_values):
     )
     diff.attrs["units"] = model["TEMP"].attrs.get("units", "")
     return diff.to_dataset(name="diff")
-
-
-
-
-
-
-

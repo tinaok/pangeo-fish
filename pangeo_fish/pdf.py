@@ -2,22 +2,19 @@
 
 import cf_xarray  # noqa: F401
 import more_itertools
+import numpy as np
 import scipy.stats
 import xarray as xr
 from more_itertools import first
 
 from pangeo_fish.utils import _detect_spatial_dims, normalize
 
-import numpy as np
-import xarray as xr
-import numpy as np
-import scipy.stats
-
 
 def normal(samples, mean, std, *, dims):
     """
     Compute the combined pdf of independent layers.
     """
+
     def _pdf(samples, mean, std):
         return scipy.stats.norm.pdf(samples, mean, std)
 
@@ -25,8 +22,11 @@ def normal(samples, mean, std, *, dims):
         mean = xr.zeros_like(samples) + mean
 
     # --- Choix des core-dims en fonction de std ---
-    is_scalar_std = np.isscalar(std) or (hasattr(std, "ndim") and std.ndim == 0) \
-                    or (hasattr(std, "size") and np.size(std) == 1)
+    is_scalar_std = (
+        np.isscalar(std)
+        or (hasattr(std, "ndim") and std.ndim == 0)
+        or (hasattr(std, "size") and np.size(std) == 1)
+    )
 
     if is_scalar_std:
         # std scalar
@@ -43,12 +43,12 @@ def normal(samples, mean, std, *, dims):
         dask="parallelized",
         input_core_dims=input_core_dims,
         output_core_dims=[dims],
-        output_dtypes=[samples.dtype],   
+        output_dtypes=[samples.dtype],
         vectorize=True,
     )
 
     return result.rename("pdf").drop_attrs(deep=False)
-    
+
 
 # def normal(samples, mean, std, *, dims):
 #     """
@@ -95,7 +95,6 @@ def normal(samples, mean, std, *, dims):
 #     )
 
 #     return result.rename("pdf").drop_attrs(deep=False)
-
 
 
 def combine_emission_pdf(raw, exclude=("initial", "final", "mask")):

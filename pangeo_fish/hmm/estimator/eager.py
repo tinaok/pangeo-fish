@@ -75,7 +75,7 @@ class EagerEstimator:
         )
 
         return value if not np.isnan(value) else np.inf
-        
+
     def _score_final_pos(self, X, *, spatial_dims=None, temporal_dims=None):
         if self.sigma is None:
             raise ValueError("unset sigma, cannot run the filter")
@@ -208,6 +208,7 @@ class EagerEstimator:
         return self._score(
             X.fillna(0), spatial_dims=spatial_dims, temporal_dims=temporal_dims
         )
+
     def score_final_pos(self, X, *, spatial_dims=None, temporal_dims=None):
         """Score the fit of the selected model to the data
 
@@ -236,6 +237,7 @@ class EagerEstimator:
         return self._score_final_pos(
             X.fillna(0), spatial_dims=spatial_dims, temporal_dims=temporal_dims
         )
+
     def decode(
         self,
         X,

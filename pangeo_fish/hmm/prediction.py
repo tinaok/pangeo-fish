@@ -47,9 +47,12 @@ class Gaussian2DCartesian(Predictor):
 
         return np.where(mask, filtered, 0)
 
+
 from dataclasses import dataclass, field
 from typing import Any
+
 import numpy as np
+
 
 @dataclass
 class Gaussian1DHealpix(Predictor):
@@ -65,14 +68,17 @@ class Gaussian1DHealpix(Predictor):
         default_factory=lambda: {"mode": "constant", "constant_value": 0}
     )
     optimize_convolution: bool = True
+
     def __post_init__(self):
         import foscat.SphericalStencil as sc
-    
+
         self.kernel_size = 33
-        nside = 2 ** self.grid_info.level
-    
-        self.stencil = sc.SphericalStencil(nside, int(self.kernel_size), cell_ids=self.cell_ids)
-    
+        nside = 2**self.grid_info.level
+
+        self.stencil = sc.SphericalStencil(
+            nside, int(self.kernel_size), cell_ids=self.cell_ids
+        )
+
         sigma_opt = (self.sigma / np.sqrt(np.pi)) * nside
         xx, yy = np.meshgrid(
             np.arange(self.kernel_size) - self.kernel_size // 2,
@@ -80,20 +86,20 @@ class Gaussian1DHealpix(Predictor):
         )
         W = np.exp(-(xx**2 + yy**2) / (sigma_opt**2))
         W = W / W.sum()
-        print("sigma",self.sigma)
-        print("sigma_opt",sigma_opt)
+        print("sigma", self.sigma)
+        print("sigma_opt", sigma_opt)
         print(W)
         print("kernel cut:", W[:, self.kernel_size // 2])
-        self.W_tensor = self.stencil.to_tensor(W).reshape(1, 1, self.kernel_size ** 2)
-    
+        self.W_tensor = self.stencil.to_tensor(W).reshape(1, 1, self.kernel_size**2)
+
         class _DummyPadder:
             def __init__(self, cell_ids):
                 self.cell_ids = cell_ids
+
             def apply(self, X):
                 return np.array(X)
-    
-        self.padder = _DummyPadder(self.cell_ids)
 
+        self.padder = _DummyPadder(self.cell_ids)
 
     def _ensure_bcp(self, arr: np.ndarray):
         """
@@ -124,7 +130,9 @@ class Gaussian1DHealpix(Predictor):
         B, C, P = out.shape
         if kind == "1d":
             # renvoyer (P,)
-            return out.reshape(P,)
+            return out.reshape(
+                P,
+            )
         if kind == "2d_bp":
             # origine (B, P)
             return out.reshape(orig_shape[0], orig_shape[1])
@@ -132,20 +140,14 @@ class Gaussian1DHealpix(Predictor):
             return out.reshape(1, P)
         # 3d : conserver
         return out
-    def predict(self, X,mask=None):
-        
+
+    def predict(self, X, mask=None):
+
         bcp, original_info = self._ensure_bcp(X)
         im_t = self.stencil.to_tensor(bcp)
-        
+
         out_t = self.stencil.Convol_torch(im_t, self.W_tensor)
         out_np = self.stencil.to_numpy(out_t)
-        
+
         filtered = self._restore_shape(out_np, original_info)
         return filtered
-
-
-
-
-
-
-        

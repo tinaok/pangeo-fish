@@ -1073,7 +1073,9 @@ def _get_max_sigma(
         max_grid_displacement = (
             maximum_speed_ * timedelta * adjustment_factor / grid_resolution
         )
-    max_sigma = max_grid_displacement.pint.to("dimensionless").pint.magnitude #/ truncate
+    max_sigma = max_grid_displacement.pint.to(
+        "dimensionless"
+    ).pint.magnitude  # / truncate
 
     return max_sigma.item()
 
@@ -1138,7 +1140,6 @@ def optimize_pdf(
         ds, earth_radius, adjustment_factor, truncate, maximum_speed, as_radians
     )
     predictor_factory = _get_predictor_factory(ds=ds, truncate=truncate, dims=dims)
-    
 
     estimator = EagerEstimator(sigma=None, predictor_factory=predictor_factory)
     ds.attrs["max_sigma"] = max_sigma  # limitation of the helper
@@ -1148,7 +1149,7 @@ def optimize_pdf(
         (1e-8, ds.attrs["max_sigma"]),
         optimizer_kwargs={"disp": 3, "xtol": tolerance},
     )
-    
+
     optimized = optimizer.fit(ds)
     params = optimized.to_dict()  # type: dict
     params = _update_params_dict(factory=predictor_factory, params=params)
@@ -1171,7 +1172,8 @@ def optimize_pdf(
                 RuntimeWarning,
             )
     return params
-    
+
+
 def optimize_pdf_final_pos(
     *,
     ds: xr.Dataset,
@@ -1207,19 +1209,18 @@ def optimize_pdf_final_pos(
         ds, earth_radius, adjustment_factor, truncate, maximum_speed, as_radians
     )
     predictor_factory = _get_predictor_factory(ds=ds, truncate=truncate, dims=dims)
-    
 
     estimator = EagerEstimator(sigma=None, predictor_factory=predictor_factory)
-    
+
     ds.attrs["max_sigma"] = max_sigma  # limitation of the helper
     print(max_sigma)
-    
+
     optimizer = EagerBoundsSearch(
         estimator,
         (1e-9, ds.attrs["max_sigma"]),
         optimizer_kwargs={"disp": 3, "xtol": tolerance},
     )
-    
+
     optimized = optimizer.fit_final_pos(ds)
     params = optimized.to_dict()  # type: dict
     params = _update_params_dict(factory=predictor_factory, params=params)
@@ -1242,6 +1243,7 @@ def optimize_pdf_final_pos(
                 RuntimeWarning,
             )
     return params
+
 
 def predict_positions(
     *,
@@ -1287,7 +1289,7 @@ def predict_positions(
     pangeo_fish.hmm.estimator.EagerEstimator.decode
     """
 
-    emission = ds 
+    emission = ds
     emission = emission.persist()
 
     if "cells" in emission.dims:

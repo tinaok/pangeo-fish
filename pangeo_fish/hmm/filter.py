@@ -6,6 +6,7 @@ import numpy as np
 import zarr  # noqa: F401
 from tqdm import tqdm
 
+
 def score(emission, predictor, initial_probability, mask=None):
     """Score of a single pass (forwards) of the spatial HMM filter
 
@@ -29,23 +30,20 @@ def score(emission, predictor, initial_probability, mask=None):
     """
     n_max = emission.shape[0]
     normalizations = []
-    
+
     initial, mask = dask.compute(initial_probability, mask)
 
     initial = initial_probability
 
-
     normalizations.append(np.sum(initial * emission[0, ...]))
     previous = initial
 
-    
     for index in tqdm(range(1, n_max), desc="Scoring"):
         prediction = predictor.predict(previous)
         updated = prediction * emission[index, ...]
 
         normalization_factor = np.sum(updated)
-        
-        
+
         if normalization_factor == 0:
             warnings.warn(
                 f"Empty product of the prediction with the true distribution at step {index+1}.",
@@ -55,17 +53,18 @@ def score(emission, predictor, initial_probability, mask=None):
         normalizations.append(normalization_factor)
         normalized = updated / normalizations[index]
 
-            
         previous = normalized
 
     normalizations_ = np.stack(normalizations, axis=0)
 
     return -np.sum(np.log(normalizations_))
 
+
+import warnings
+
+import dask.array as da
 import numpy as np
 from tqdm import tqdm
-import dask.array as da
-import warnings
 
 
 def score_final_pos(
@@ -76,8 +75,8 @@ def score_final_pos(
     mask,
     *,
     return_states=False,
-    eps=1e-12
-    ):
+    eps=1e-12,
+):
     """
     Forward pass with diagnostics + several policies to handle updated.sum()==0.
     Returns loss (or loss, preds_stack, states_stack if return_states True).
@@ -96,19 +95,20 @@ def score_final_pos(
     norm0 = float(np.sum(initial_probability * obs0))
     normalizations.append(norm0 if norm0 > 0 else eps)
 
-
     final = emission[-1, ...]
     final_idx_max = int(np.argmax(final))
     final_val_max = float(np.max(final))
-    print(f"[score_final_pos] final_probability max index = {final_idx_max}, value = {final_val_max}")
+    print(
+        f"[score_final_pos] final_probability max index = {final_idx_max}, value = {final_val_max}"
+    )
 
     for index in tqdm(range(1, n_max), desc="Forward pass"):
         # prediction
         prediction = predictor.predict(states[index - 1], mask=mask)
         if isinstance(prediction, da.Array):
             prediction = prediction.compute()
-        
-        prediction /= (np.sum(prediction) + 1e-16)
+
+        prediction /= np.sum(prediction) + 1e-16
 
         predictions.append(prediction)
 
@@ -125,7 +125,7 @@ def score_final_pos(
         if norm_factor == 0:
             normalizations.append(eps)
             print(f"[WARNING] Step {index}: sum(updated)==0 -> keeping previous state")
-    
+
         else:
             normalizations.append(norm_factor)
             normalized = updated / (norm_factor + 1e-16)
@@ -135,17 +135,19 @@ def score_final_pos(
     preds_stack = np.stack(predictions, axis=0)
     states_stack = np.stack(states, axis=0)
 
-
     last_state = states_stack[-1, ...]
-    print(f"[score_final_pos] last_state shape = {last_state.shape}, sum={float(np.sum(last_state)):.3e}, max={float(np.max(last_state)):.3e}")
+    print(
+        f"[score_final_pos] last_state shape = {last_state.shape}, sum={float(np.sum(last_state)):.3e}, max={float(np.max(last_state)):.3e}"
+    )
 
- 
     state_val = float(states_stack[-1, final_idx_max])
     if state_val <= 0:
-        warnings.warn(f"state_val at index {final_idx_max} is {state_val} -> using eps for loss", RuntimeWarning)
-        
-    loss = -np.log(state_val + eps)
+        warnings.warn(
+            f"state_val at index {final_idx_max} is {state_val} -> using eps for loss",
+            RuntimeWarning,
+        )
 
+    loss = -np.log(state_val + eps)
 
     final_state_val = float(states_stack[-1, final_idx_max])
     final_info = {
@@ -155,6 +157,7 @@ def score_final_pos(
     }
     print(final_info)
     return loss
+
 
 # def score_final_pos(emission, predictor, initial_probability, final_probability, mask,
 #                     return_states=False, debug=True, debug_interval=50):
@@ -266,7 +269,7 @@ def forward(emission, predictor, initial_probability, mask):
     n_max = emission.shape[0]
     predictions = [initial_probability]
     states = [initial_probability]
-    
+
     for index in tqdm(range(1, n_max), desc="Forward pass"):
         prediction = predictor.predict(states[index - 1], mask=mask)
         predictions.append(prediction)
@@ -278,6 +281,7 @@ def forward(emission, predictor, initial_probability, mask):
         states.append(normalized)
 
     return np.stack(predictions, axis=0), np.stack(states, axis=0)
+
 
 def backward(states, predictions, predictor, mask):
     n_max = states.shape[0]
@@ -300,7 +304,6 @@ def backward(states, predictions, predictor, mask):
         np.stack(backward_predictions[::-1], axis=0),
         np.stack(smoothed[::-1], axis=0),
     )
-
 
 
 def forward_backward(emission, predictor, initial_probability, mask=None):
