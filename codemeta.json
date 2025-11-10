@@ -7,52 +7,78 @@
   "hasSourceCode": "https://github.com/pangeo-fish/pangeo-fish",
   "license": "https://spdx.org/licenses/BSD-3-Clause",
   "programmingLanguage": "Python",
-  "keywords": ["biologging","oceanography","pangeo","xarray","dask","DGGS","healpix"],
+  "keywords": [
+    "biologging",
+    "oceanography",
+    "pangeo",
+    "xarray",
+    "dask",
+    "DGGS",
+    "healpix"
+  ],
   "softwareVersion": "2025.03.3",
   "datePublished": "2025-03-30",
 
   "author": [
     {
       "@type": "Role",
-      "roleName": ["Conceptualization","Software"],
+      "roleName": ["Conceptualization", "Software"],
       "author": {
         "@type": "Person",
         "name": "Justus Magin",
         "identifier": "https://orcid.org/0000-0002-4254-8002",
-        "affiliation": {"@type": "Organization", "name": "UMR LOPS (CNRS–Ifremer–IRD–UBO), IUEM, Brest, France"},
+        "affiliation": {
+          "@type": "Organization",
+          "name": "UMR LOPS (CNRS–Ifremer–IRD–UBO), IUEM, Brest, France"
+        },
         "sameAs": "https://github.com/keewis"
       }
     },
     {
       "@type": "Role",
-      "roleName": ["Conceptualization","Software","Validation"],
+      "roleName": ["Conceptualization", "Software", "Validation"],
       "author": {
         "@type": "Person",
         "name": "Quentin Mazouni",
         "identifier": "https://orcid.org/0009-0003-3519-5514",
-        "affiliation": {"@type": "Organization", "name": "Simula Research Laboratory, Oslo, Norway"},
+        "affiliation": {
+          "@type": "Organization",
+          "name": "Simula Research Laboratory, Oslo, Norway"
+        },
         "sameAs": "https://github.com/QuentinMaz"
       }
     },
     {
       "@type": "Role",
-      "roleName": ["Software","Validation"],
+      "roleName": ["Software", "Validation"],
       "author": {
         "@type": "Person",
         "name": "Etienne Cap",
         "identifier": "https://orcid.org/0009-0007-0360-0692",
-        "affiliation": {"@type": "Organization", "name": "UMR LOPS (CNRS–Ifremer–IRD–UBO), IUEM, Brest, France"},
+        "affiliation": {
+          "@type": "Organization",
+          "name": "UMR LOPS (CNRS–Ifremer–IRD–UBO), IUEM, Brest, France"
+        },
         "sameAs": "https://github.com/capetienne"
       }
     },
     {
       "@type": "Role",
-      "roleName": ["Conceptualization","Methodology","Funding acquisition", "Software","Project administration"],
+      "roleName": [
+        "Conceptualization",
+        "Methodology",
+        "Funding acquisition",
+        "Software",
+        "Project administration"
+      ],
       "author": {
         "@type": "Person",
         "name": "Tina Erica Odaka",
         "identifier": "https://orcid.org/0000-0002-1500-0156",
-        "affiliation": {"@type": "Organization", "name": "UMR LOPS (CNRS–Ifremer–IRD–UBO), IUEM, Brest, France"},
+        "affiliation": {
+          "@type": "Organization",
+          "name": "UMR LOPS (CNRS–Ifremer–IRD–UBO), IUEM, Brest, France"
+        },
         "sameAs": "https://github.com/tinaok"
       }
     }
@@ -66,27 +92,40 @@
         "@type": "Person",
         "name": "Marine Gonse",
         "identifier": "https://orcid.org/0000-0002-5378-8482",
-        "affiliation": {"@type": "Organization", "name": "UMR DECOD (Ecosystem Dynamics and Sustainability), IFREMER, Institut Agro, INRAE, Plouzané, France"}
+        "affiliation": {
+          "@type": "Organization",
+          "name": "UMR DECOD (Ecosystem Dynamics and Sustainability), IFREMER, Institut Agro, INRAE, Plouzané, France"
+        }
       }
     },
     {
       "@type": "Role",
-      "roleName": ["Methodology","Funding acquisition"],
+      "roleName": ["Methodology", "Funding acquisition"],
       "contributor": {
         "@type": "Person",
         "name": "Mathieu Woillez",
         "identifier": "https://orcid.org/0000-0002-1032-2105",
-        "affiliation": {"@type": "Organization", "name": "UMR DECOD (Ecosystem Dynamics and Sustainability), IFREMER, Institut Agro, INRAE, Plouzané, France"}
+        "affiliation": {
+          "@type": "Organization",
+          "name": "UMR DECOD (Ecosystem Dynamics and Sustainability), IFREMER, Institut Agro, INRAE, Plouzané, France"
+        }
       }
     },
     {
       "@type": "Role",
-      "roleName": ["Supervision","Funding acquisiation","Project administration"],
+      "roleName": [
+        "Supervision",
+        "Funding acquisiation",
+        "Project administration"
+      ],
       "contributor": {
         "@type": "Person",
         "name": "Anne Fouilloux",
         "identifier": "https://orcid.org/0000-0002-1784-2920",
-        "affiliation": {"@type": "Organization", "name": "Simula Research Laboratory, Oslo, Norway"}
+        "affiliation": {
+          "@type": "Organization",
+          "name": "Simula Research Laboratory, Oslo, Norway"
+        }
       }
     },
     {
@@ -96,14 +135,25 @@
         "@type": "Person",
         "name": "Jean-Marc Delouis",
         "identifier": "https://orcid.org/0000-0002-0713-1658",
-        "affiliation": {"@type": "Organization", "name": "CNRS (UMR LOPS), Brest, France"}
+        "affiliation": {
+          "@type": "Organization",
+          "name": "CNRS (UMR LOPS), Brest, France"
+        }
       }
     }
   ],
 
   "maintainer": [
-    {"@type": "Person", "name": "Tina Erica Odaka", "sameAs": "https://github.com/tinaok"},
-    {"@type": "Person", "name": "Etienne Capet", "sameAs": "https://github.com/capetienne"}
+    {
+      "@type": "Person",
+      "name": "Tina Erica Odaka",
+      "sameAs": "https://github.com/tinaok"
+    },
+    {
+      "@type": "Person",
+      "name": "Etienne Capet",
+      "sameAs": "https://github.com/capetienne"
+    }
   ],
 
   "identifier": "https://doi.org/10.5281/zenodo.15110143",
