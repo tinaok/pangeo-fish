@@ -33,7 +33,11 @@ from pangeo_fish.diff import diff_z
 from pangeo_fish.grid import center_longitude
 from pangeo_fish.hmm.estimator import EagerEstimator
 from pangeo_fish.hmm.optimize import EagerBoundsSearch
-from pangeo_fish.hmm.prediction import Gaussian1DHealpix, Gaussian2DCartesian
+from pangeo_fish.hmm.prediction import (
+    Foscat1DHealpix,
+    Gaussian1DHealpix,
+    Gaussian2DCartesian,
+)
 from pangeo_fish.io import (
     open_copernicus_catalog,
     open_tag,
@@ -1032,21 +1036,44 @@ def normalize_pdf(
     return normalized, figure
 
 
-def _get_predictor_factory(ds: xr.Dataset, truncate: float, dims: list[str]):
+def _get_predictor_factory(
+    ds: xr.Dataset, truncate: float | None, dims: list[str], conv_method: str
+):
     if dims == ["x", "y"]:
+        if truncate is None:
+            raise ValueError("truncate must not be None when dims == ['x', 'y']")
         predictor = curry(Gaussian2DCartesian, truncate=truncate)
+
     elif dims == ["cells"]:
-        predictor = curry(
-            Gaussian1DHealpix,
-            cell_ids=ds["cell_ids"].data,
-            grid_info=ds.dggs.grid_info,
-            truncate=truncate,
-            weights_threshold=1e-8,
-            pad_kwargs={"mode": "constant", "constant_value": 0},
-            optimize_convolution=True,
-        )
+        if conv_method == "HealpixConv":
+            if truncate is None:
+                raise ValueError(
+                    "truncate must not be None when using HealpixConv on 'cells'"
+                )
+            predictor = curry(
+                Gaussian1DHealpix,
+                cell_ids=ds["cell_ids"].data,
+                grid_info=ds.dggs.grid_info,
+                truncate=truncate,
+                weights_threshold=1e-8,
+                pad_kwargs={"mode": "constant", "constant_value": 0},
+                optimize_convolution=True,
+            )
+
+        elif conv_method == "FoscatConv":
+            predictor = curry(
+                Foscat1DHealpix,
+                cell_ids=ds["cell_ids"].data,
+                grid_info=ds.dggs.grid_info,
+            )
+
+        else:
+            raise ValueError(
+                f'Unknown helper "{conv_method}". Expected "HealpixConv" or "FoscatConv".'
+            )
     else:
         raise ValueError(f'Unknown dims "{dims}".')
+
     return predictor
 
 
@@ -1054,7 +1081,6 @@ def _get_max_sigma(
     ds: xr.Dataset,
     earth_radius: pint.Quantity,
     adjustment_factor: float,
-    truncate: float,
     maximum_speed: pint.Quantity,
     as_radians: bool,
 ) -> float:
@@ -1072,7 +1098,7 @@ def _get_max_sigma(
         max_grid_displacement = (
             maximum_speed_ * timedelta * adjustment_factor / grid_resolution
         )
-    max_sigma = max_grid_displacement.pint.to("dimensionless").pint.magnitude / truncate
+    max_sigma = max_grid_displacement.pint.to("dimensionless").pint.magnitude
 
     return max_sigma.item()
 
@@ -1082,10 +1108,11 @@ def optimize_pdf(
     ds: xr.Dataset,
     earth_radius: pint.Quantity,
     adjustment_factor: float,
-    truncate: float,
+    truncate: float | None,
     maximum_speed: pint.Quantity,
     tolerance: float,
     dims: list[str] = ["cells"],
+    conv_method: str = "HealpixConv",
     save_parameters=False,
     storage_options: dict = None,
     target_root=".",
@@ -1124,7 +1151,6 @@ def optimize_pdf(
         A dictionary containing the optimization results (mainly, the sigma value of the Brownian movement model)
     """
 
-    # it is important to compute before re-indexing? Yes.
     ds = ds.compute()
 
     if "cells" in ds.dims:
@@ -1134,9 +1160,11 @@ def optimize_pdf(
         as_radians = False
 
     max_sigma = _get_max_sigma(
-        ds, earth_radius, adjustment_factor, truncate, maximum_speed, as_radians
+        ds, earth_radius, adjustment_factor, maximum_speed, as_radians
     )
-    predictor_factory = _get_predictor_factory(ds=ds, truncate=truncate, dims=dims)
+    predictor_factory = _get_predictor_factory(
+        ds=ds, truncate=truncate, dims=dims, conv_method=conv_method
+    )
 
     estimator = EagerEstimator(sigma=None, predictor_factory=predictor_factory)
     ds.attrs["max_sigma"] = max_sigma  # limitation of the helper
@@ -1172,13 +1200,13 @@ def optimize_pdf(
 
 def predict_positions(
     *,
-    target_root: str,
+    ds: xr.Dataset | None = None,
+    target_root: str | None = None,
     storage_options: dict,
     chunks: dict,
     track_modes=["mean", "mode"],
     additional_track_quantities=["speed", "distance"],
     save=True,
-    tag_name: str,
     **kwargs,
 ):
     """High-level helper function for predicting fish's positions and generating the consequent trajectories.
@@ -1214,16 +1242,27 @@ def predict_positions(
     pangeo_fish.hmm.estimator.EagerEstimator.decode
     """
 
-    # loads the normalized .zarr array
-    emission = xr.open_dataset(
-        f"{target_root}/emission_w_bathy_pdf_{tag_name}.zarr",
-        engine="zarr",
-        chunks=chunks,
-        inline_array=True,
-        storage_options=storage_options,
-    )
+    if ds is None:
+        if target_root is None:
+            raise ValueError(
+                "You must provide either `ds` or `target_root` " "to load the dataset."
+            )
 
-    emission = emission.compute()
+        # old behavior preserved:
+        emission = xr.open_dataset(
+            f"{target_root}/combined.zarr",
+            engine="zarr",
+            chunks=chunks,
+            inline_array=True,
+            storage_options=storage_options,
+        )
+        emission = emission.compute()
+
+    else:
+
+        emission = ds
+
+        emission = emission.compute()
 
     if "cells" in emission.dims:
         emission = to_healpix(emission)
@@ -1234,7 +1273,11 @@ def predict_positions(
 
     # do not account for the other kwargs...
     # not very robust yet...
-    truncate = float(params["predictor_factory"]["kwargs"]["truncate"])
+    predictor_kwargs = params["predictor_factory"].get("kwargs", {})
+
+    truncate_raw = predictor_kwargs.get("truncate")
+    truncate = float(truncate_raw) if truncate_raw is not None else None
+
     cls_name = params["predictor_factory"]["class"]  # type: str
     if "Gaussian2DCartesian" in cls_name:
         predictor_factory = _get_predictor_factory(
@@ -1242,7 +1285,11 @@ def predict_positions(
         )
     elif "Gaussian1DHealpix" in cls_name:
         predictor_factory = _get_predictor_factory(
-            emission, truncate=truncate, dims=["cells"]
+            emission, truncate=truncate, conv_method="HealpixConv", dims=["cells"]
+        )
+    elif "Foscat1DHealpix" in cls_name:
+        predictor_factory = _get_predictor_factory(
+            emission, truncate=truncate, conv_method="FoscatConv", dims=["cells"]
         )
     else:
         raise RuntimeError("Could not infer predictor's class from the `.json` file.")
